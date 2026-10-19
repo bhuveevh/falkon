@@ -18,6 +18,14 @@ mkdir -p "$PKG/DEBIAN"
 cp -a "$STAGE/." "$PKG/"
 
 # --- work out the shared-library dependencies properly --------------------
+# The private Falkon library lives in the staged tree, so make it visible to the
+# linker first. Without this dpkg-shlibdeps cannot follow the dependency chain
+# and the generated Depends line comes out far too short.
+if [ -d "$PKG/usr/lib/x86_64-linux-gnu" ]; then
+    cp -a "$PKG/usr/lib/x86_64-linux-gnu/." /usr/lib/x86_64-linux-gnu/ || true
+    ldconfig || true
+fi
+
 mkdir -p debian
 cat > debian/control <<EOF
 Source: $PKGNAME
@@ -38,10 +46,16 @@ for cand in "$PKG"/usr/bin/*; do
     [ -f "$cand" ] || continue
     BIN="$BIN -e $cand"
 done
+for cand in "$PKG"/usr/lib/x86_64-linux-gnu/libFalkon*.so*; do
+    [ -f "$cand" ] || continue
+    BIN="$BIN -e $cand"
+done
 
 DEPS=""
 if command -v dpkg-shlibdeps >/dev/null 2>&1; then
-    DEPS=$(dpkg-shlibdeps -O $BIN 2>/dev/null | sed -n 's/^shlibs:Depends=//p' | tr '\n' ' ')
+    dpkg-shlibdeps -O $BIN > /tmp/shlibdeps.out 2> /tmp/shlibdeps.err || true
+    sed -n '1,15p' /tmp/shlibdeps.err || true
+    DEPS=$(sed -n 's/^shlibs:Depends=//p' /tmp/shlibdeps.out | tr '\n' ' ')
 fi
 
 if [ -z "$DEPS" ]; then
