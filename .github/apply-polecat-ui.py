@@ -19,7 +19,7 @@ if "POLECATHERO" in src:
     sys.exit(0)
 
 if "#include <QJsonArray>" not in src:
-    anchor = "#include <QDir>\n#include <QTimer>"
+    anchor = "#include <QTimer>"
     if anchor not in src:
         sys.exit("ERROR: include anchor not found in " + PATH)
     src = src.replace(anchor, "#include <QDir>\n#include <QJsonArray>\n#include <QJsonDocument>\n#include <QTimer>", 1)
