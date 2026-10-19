@@ -21,11 +21,14 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
+      - name: Apply Polecat UI customisations
+        run: python3 .github/apply-polecat-ui.py
+
       - name: Install build dependencies
         run: |
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-            build-essential cmake ninja-build pkg-config gettext \
+            build-essential cmake ninja-build pkg-config gettext python3 \
             extra-cmake-modules \
             qt6-base-dev qt6-base-dev-tools qt6-webengine-dev qt6-webchannel-dev \
             qt6-declarative-dev qt6-tools-dev qt6-svg-dev libqt6sql6-sqlite \
@@ -49,6 +52,11 @@ jobs:
 
       - name: Package the .deb
         run: sh .github/make-deb.sh "1.0.0.${GITHUB_RUN_NUMBER}"
+
+      - name: Show what was built
+        run: |
+          ls -la *.deb
+          dpkg-deb --info *.deb | head -20
 
       - name: Upload the .deb
         uses: actions/upload-artifact@v4
